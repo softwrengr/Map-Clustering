@@ -2,7 +2,11 @@ package com.syedmetal.task;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
+
 import android.os.Bundle;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -11,6 +15,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.syedmetal.task.databinding.ActivityMainBinding;
+import com.syedmetal.task.models.ApiResponseModel;
+import com.syedmetal.task.viewmodels.MapViewModel;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -21,6 +27,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this,R.layout.activity_main);
 
+
+        MapViewModel viewModel = new ViewModelProvider(this).get(MapViewModel.class);
+        binding.setViewmodel(viewModel);
+        binding.setLifecycleOwner(this);
+
+        viewModel.apiCall();
+
+        viewModel.getLiveData().observe(this, apiResponseModel -> {
+            if(apiResponseModel != null){
+
+            }
+        });
+
+
+        //showing map
         binding.mapView.onCreate(savedInstanceState);
         binding.mapView.onResume();
         try {
@@ -30,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         } catch (Exception e) {
             e.printStackTrace();
         }
+        //end map block
     }
 
     @Override
