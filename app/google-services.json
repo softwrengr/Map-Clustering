@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "684534807710",
+    "firebase_url": "https://syed-metal-284515.firebaseio.com",
+    "project_id": "syed-metal-284515",
+    "storage_bucket": "syed-metal-284515.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:684534807710:android:e893d9213faab52338cf8f",
+        "android_client_info": {
+          "package_name": "com.syedmetal.task"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "684534807710-57btci873ddfurbnlnguhshqttdluioq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.syedmetal.task",
+            "certificate_hash": "8a49158720a2ebae8039b7b3d30cebe77f89f196"
+          }
+        },
+        {
+          "client_id": "684534807710-ic12l8nfcrmccoafbv1b9b7udtnblcgp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQyeenIdwOOtQFK22ETgRksaJT7wwCmOk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "684534807710-ic12l8nfcrmccoafbv1b9b7udtnblcgp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -50,4 +50,8 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-livedata:$lifecycle_version"
 
+    //map dependencies
+    implementation 'com.google.android.gms:play-services-maps:17.0.0'
 }
+
+apply plugin: 'com.google.gms.google-services'
