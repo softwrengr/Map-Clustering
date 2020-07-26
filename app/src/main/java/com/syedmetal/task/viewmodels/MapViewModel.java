@@ -4,12 +4,15 @@ import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+
 import com.syedmetal.task.models.ApiResponseModel;
 import com.syedmetal.task.remote.ApiInterface;
 import com.syedmetal.task.remote.RetrofitClass;
 import com.syedmetal.task.utilities.Constants;
+
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -31,25 +34,34 @@ public class MapViewModel extends ViewModel {
                     try {
                         assert response.errorBody() != null;
                         JSONObject jsonObject = new JSONObject(response.errorBody().string());
-                        errorMessage.setValue(""+jsonObject.getString("message"));
+                        errorMessage.setValue("" + jsonObject.getString("message"));
                     } catch (Exception e) {
-                        errorMessage.setValue(""+e.getMessage());
+                        errorMessage.setValue("" + e.getMessage());
                     }
 
                 } else {
-                    liveData.setValue(response.body());
+                    if (!response.body().getError()) {
+                        liveData.setValue(response.body());
+                    }
+                    else {
+                        errorMessage.setValue(response.body().getStatus());
+                    }
                 }
             }
 
             @Override
             public void onFailure(@NotNull Call<ApiResponseModel> call, @NotNull Throwable t) {
-                errorMessage.setValue(""+t.getMessage());
+                errorMessage.setValue("" + t.getMessage());
             }
         });
     }
 
     public MutableLiveData<ApiResponseModel> getLiveData() {
         return liveData;
+    }
+
+    public MutableLiveData<String> errroMessage() {
+        return errorMessage;
     }
 
 }
