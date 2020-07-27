@@ -2,8 +2,14 @@ package com.syedmetal.task;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+
 import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -13,22 +19,26 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.maps.android.clustering.ClusterManager;
+import com.google.maps.android.clustering.algo.NonHierarchicalViewBasedAlgorithm;
 import com.syedmetal.task.databinding.ActivityMainBinding;
 import com.syedmetal.task.models.ApiDataModel;
+import com.syedmetal.task.models.ApiResponseModel;
 import com.syedmetal.task.utilities.MyItem;
+import com.syedmetal.task.utilities.NetworkUtils;
 import com.syedmetal.task.viewmodels.MapViewModel;
+
+import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements GoogleMap.OnMarkerClickListener {
+public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
-    private List<ApiDataModel> dataList = new ArrayList<>();
-    private LatLng latLng;
-    private String title;
     private ClusterManager<MyItem> clusterManager;
-    private GoogleMap map;
+    private MapViewModel viewModel;
+    private List<MyItem> itemList = new ArrayList<>();
+    private NonHierarchicalViewBasedAlgorithm<MyItem> mAlgorithm = new NonHierarchicalViewBasedAlgorithm<>(10, 10);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,11 +46,16 @@ public class MainActivity extends AppCompatActivity implements GoogleMap.OnMarke
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
 
-        MapViewModel viewModel = new ViewModelProvider(this).get(MapViewModel.class);
+        viewModel = new ViewModelProvider(this).get(MapViewModel.class);
         binding.setViewmodel(viewModel);
         binding.setLifecycleOwner(this);
 
-        viewModel.apiCall();
+        if(NetworkUtils.isNetworkConnected(getApplicationContext())){
+            viewModel.getPages();
+        }
+        else {
+            showToast("you have no active connection");
+        }
 
         //map block
         binding.mapView.onCreate(savedInstanceState);
@@ -54,65 +69,59 @@ public class MainActivity extends AppCompatActivity implements GoogleMap.OnMarke
         //end map block
 
         viewModel.getLiveData().observe(this, apiResponseModel -> {
-            if (apiResponseModel != null) {
-                dataList.addAll(apiResponseModel.getLocationData());
-                binding.mapView.getMapAsync(this::showMarkers);
-            }
+            binding.mapView.getMapAsync(this::showMarkers);
+            addItem(apiResponseModel);
         });
 
-        viewModel.errroMessage().observe(this,message -> {
-            showToast(message);
-        });
+        viewModel.getErrorMessage().observe(this,s -> showToast(s));
+    }
+
+
+    private void showMarkers(GoogleMap googleMap) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        mAlgorithm.updateViewSize(metrics.widthPixels,metrics.heightPixels);
+
+        clusterManager = new ClusterManager<>(this, googleMap);
+        clusterManager.setAlgorithm(mAlgorithm);
+
+//        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latLng.latitude,latLng.longitude), 6));
+        googleMap.setOnCameraIdleListener(clusterManager);
 
 
     }
 
 
-    public void showMarkers(GoogleMap googleMap) {
-        map = googleMap;
-        if (dataList != null) {
-            for (int i = 0; i < dataList.size(); i++) {
-                title = dataList.get(i).getName();
-                latLng = new LatLng(Double.parseDouble(dataList.get(i).getLatitude()), Double.parseDouble(dataList.get(i).getLongitude()));
+    private void addItem(ApiResponseModel response){
+        for (int j = 0; j < response.getLocationData().size(); j++) {
+
+            double lat = 0, lng = 0;
+
+            for (int i = 0; i < 10; i++) {
+                double offset = i / 60d;
+                lat = Double.parseDouble(response.getLocationData().get(j).getLatitude()) + offset;
+                lng = Double.parseDouble(response.getLocationData().get(j).getLongitude()) + offset;
             }
+
+            String title = response.getLocationData().get(j).getName();
+            itemList.add(new MyItem(lat, lng, title));
+
         }
 
-        setUpClusterer();
-        map.addMarker(new MarkerOptions().position(latLng).title(title));
-        map.setOnMarkerClickListener(this::onMarkerClick);
-
-    }
-
-    private void setUpClusterer() {
-        // Position the map.
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latLng.latitude,latLng.longitude), 6));
-        clusterManager = new ClusterManager<>(this, map);
-        map.setOnCameraIdleListener(clusterManager);
-        map.setOnMarkerClickListener(clusterManager);
-
-        // Add cluster items (markers) to the cluster manager.
-        addItems();
-    }
-
-    private void addItems() {
         // Add ten cluster items in close proximity, for purposes of this example.
-        for(int i=0;i<dataList.size();i++){
-            double offset = i / 60d;
-            double lat = Double.parseDouble(dataList.get(i).getLatitude());
-            double lng = Double.parseDouble(dataList.get(i).getLongitude());
-            MyItem myItem = new MyItem(lat,lng);
-            clusterManager.addItem(myItem);
+        mAlgorithm.lock();
+        try {
+            mAlgorithm.addItems(itemList);
+        } finally {
+            mAlgorithm.unlock();
         }
     }
-
 
     @Override
     public void onPause() {
         binding.mapView.onPause();
         super.onPause();
-
     }
-
 
     @Override
     public void onDestroy() {
@@ -121,13 +130,8 @@ public class MainActivity extends AppCompatActivity implements GoogleMap.OnMarke
         super.onDestroy();
     }
 
-    private void showToast(String message){
-        Toast.makeText(this, ""+message, Toast.LENGTH_SHORT).show();
+    private void showToast(String message) {
+        Toast.makeText(this, "" + message, Toast.LENGTH_SHORT).show();
     }
 
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-        showToast(marker.getTitle());
-        return false;
-    }
 }
