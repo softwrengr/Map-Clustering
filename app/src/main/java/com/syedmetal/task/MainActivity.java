@@ -108,6 +108,8 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+
+        //just checking branches
         // Add ten cluster items in close proximity, for purposes of this example.
         mAlgorithm.lock();
         try {
